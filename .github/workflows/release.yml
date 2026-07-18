@@ -1,5 +1,23 @@
 name: Release
 
+# Builds the .app on a version tag and publishes a GitHub release.
+#
+# If the signing/notarization secrets below are configured, the app is signed
+# with your Developer ID (hardened runtime + secure timestamp), notarized, and
+# stapled - so users can open it without any Gatekeeper workaround. If the
+# secrets are absent, it falls back to an ad-hoc signature (usable, but users
+# must clear the quarantine flag on first launch).
+#
+# Required repository secrets for signed + notarized builds:
+#   MACOS_CERTIFICATE_P12       base64 of your "Developer ID Application" cert
+#                               exported as .p12
+#                               (base64 -i cert.p12 | pbcopy)
+#   MACOS_CERTIFICATE_PASSWORD  the password set when exporting the .p12
+#   AC_API_KEY_ID               App Store Connect API key id (e.g. ABC123DEF4)
+#   AC_API_ISSUER_ID            App Store Connect API issuer id (a UUID)
+#   AC_API_KEY_P8               base64 of the App Store Connect API .p8 key
+#                               (base64 -i AuthKey_XXXX.p8 | pbcopy)
+
 on:
   push:
     tags: ["v*"]
@@ -16,6 +34,9 @@ jobs:
   release:
     name: Build and publish
     runs-on: macos-14
+    env:
+      HAS_SIGNING: ${{ secrets.MACOS_CERTIFICATE_P12 != '' }}
+      HAS_NOTARIZATION: ${{ secrets.AC_API_KEY_ID != '' && secrets.MACOS_CERTIFICATE_P12 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -31,11 +52,80 @@ jobs:
       - name: Build (release)
         run: swift build -c release
 
-      - name: Assemble app bundle (ad-hoc signed)
+      - name: Assemble app bundle (ad-hoc baseline)
         run: make bundle IDENTITY="-"
+
+      - name: Import Developer ID certificate
+        if: env.HAS_SIGNING == 'true'
+        env:
+          MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/app-signing.keychain-db"
+          KEYCHAIN_PW="$(openssl rand -base64 24)"
+          echo "SIGN_KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+
+          security create-keychain -p "$KEYCHAIN_PW" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PW" "$KEYCHAIN"
+
+          echo "$MACOS_CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PW" "$KEYCHAIN" >/dev/null
+
+          # Put our keychain first in the search list so codesign finds the identity.
+          security list-keychains -d user -s "$KEYCHAIN" \
+            $(security list-keychains -d user | sed s/\"//g)
+
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" \
+            | grep 'Developer ID Application' | head -1 | awk -F'"' '{print $2}')"
+          if [ -z "$IDENTITY" ]; then
+            echo "No 'Developer ID Application' identity found in the imported cert." >&2
+            exit 1
+          fi
+          echo "SIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "Signing identity: $IDENTITY"
+          rm -f "$RUNNER_TEMP/cert.p12"
+
+      - name: Sign with Developer ID (hardened runtime)
+        if: env.HAS_SIGNING == 'true'
+        run: |
+          set -euo pipefail
+          APP="ClaudeMultiUsage.app"
+          RES="$APP/Contents/Resources/ClaudeMultiUsage_ClaudeMultiUsage.bundle"
+          # Sign inside-out: nested resource bundle first, then the app.
+          codesign --force --options runtime --timestamp \
+            --keychain "$SIGN_KEYCHAIN" --sign "$SIGN_IDENTITY" "$RES"
+          codesign --force --options runtime --timestamp \
+            --keychain "$SIGN_KEYCHAIN" --sign "$SIGN_IDENTITY" "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+
+      - name: Notarize and staple
+        if: env.HAS_NOTARIZATION == 'true'
+        env:
+          AC_API_KEY_ID: ${{ secrets.AC_API_KEY_ID }}
+          AC_API_ISSUER_ID: ${{ secrets.AC_API_ISSUER_ID }}
+          AC_API_KEY_P8: ${{ secrets.AC_API_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          echo "$AC_API_KEY_P8" | base64 --decode > "$RUNNER_TEMP/asc_key.p8"
+          ditto -c -k --keepParent ClaudeMultiUsage.app "$RUNNER_TEMP/notarize.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
+            --key "$RUNNER_TEMP/asc_key.p8" \
+            --key-id "$AC_API_KEY_ID" \
+            --issuer "$AC_API_ISSUER_ID" \
+            --wait
+          xcrun stapler staple ClaudeMultiUsage.app
+          xcrun stapler validate ClaudeMultiUsage.app
+          rm -f "$RUNNER_TEMP/asc_key.p8"
+          echo "NOTARIZED=true" >> "$GITHUB_ENV"
 
       - name: Package .zip
         run: |
+          set -euo pipefail
           VERSION="${{ steps.version.outputs.tag }}"
           ditto -c -k --keepParent ClaudeMultiUsage.app "ClaudeMultiUsage-${VERSION}.zip"
           shasum -a 256 "ClaudeMultiUsage-${VERSION}.zip" > "ClaudeMultiUsage-${VERSION}.zip.sha256"
@@ -44,10 +134,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           VERSION="${{ steps.version.outputs.tag }}"
+          if [ "${NOTARIZED:-false}" = "true" ]; then
+            NOTES="This build is signed with a Developer ID and notarized by Apple - it opens without any Gatekeeper workaround."
+          else
+            NOTES="This build is ad-hoc signed (no Apple Developer ID). On first launch, right-click the app and choose Open, or run \`xattr -dr com.apple.quarantine ClaudeMultiUsage.app\` to clear Gatekeeper quarantine."
+          fi
           gh release create "$VERSION" \
             --title "Claude Multi Usage $VERSION" \
             --generate-notes \
-            --notes "The app is ad-hoc signed (no Apple Developer ID). On first launch, right-click the app and choose Open, or run \`xattr -dr com.apple.quarantine ClaudeMultiUsage.app\` to clear Gatekeeper quarantine." \
+            --notes "$NOTES" \
             "ClaudeMultiUsage-${VERSION}.zip" \
             "ClaudeMultiUsage-${VERSION}.zip.sha256"

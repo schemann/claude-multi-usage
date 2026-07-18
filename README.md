@@ -55,9 +55,10 @@ chain in `~/.config/claude-multi-usage/accounts.json` (file mode `0600`).
 Grab the latest `.zip` from the [Releases](../../releases) page, unzip it, and
 move `ClaudeMultiUsage.app` to your Applications folder.
 
-Release builds are **ad-hoc signed** (no Apple Developer ID), so Gatekeeper will
-warn on first launch. Either right-click the app and choose **Open**, or clear
-the quarantine flag:
+Releases built with a configured Developer ID are **signed and notarized** by
+Apple and open normally. If a build is only **ad-hoc signed** (no Developer ID
+configured), Gatekeeper will warn on first launch - either right-click the app
+and choose **Open**, or clear the quarantine flag:
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/ClaudeMultiUsage.app
