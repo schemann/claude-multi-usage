@@ -174,7 +174,8 @@ final class AppModel: ObservableObject {
     private func scheduleTimer() {
         timer?.invalidate()
         let t = Timer(timeInterval: Double(refreshMinutes * 60), repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.refresh() }
+            guard let self else { return }
+            Task { @MainActor in self.refresh() }
         }
         RunLoop.main.add(t, forMode: .common)
         timer = t
