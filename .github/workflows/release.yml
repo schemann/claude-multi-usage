@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build (release)
+        run: swift build -c release
+
+      - name: Assemble app bundle (ad-hoc signed)
+        run: make bundle IDENTITY="-"
+
+      - name: Package .zip
+        run: |
+          VERSION="${{ steps.version.outputs.tag }}"
+          ditto -c -k --keepParent ClaudeMultiUsage.app "ClaudeMultiUsage-${VERSION}.zip"
+          shasum -a 256 "ClaudeMultiUsage-${VERSION}.zip" > "ClaudeMultiUsage-${VERSION}.zip.sha256"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.version.outputs.tag }}"
+          gh release create "$VERSION" \
+            --title "Claude Multi Usage $VERSION" \
+            --generate-notes \
+            --notes "The app is ad-hoc signed (no Apple Developer ID). On first launch, right-click the app and choose Open, or run \`xattr -dr com.apple.quarantine ClaudeMultiUsage.app\` to clear Gatekeeper quarantine." \
+            "ClaudeMultiUsage-${VERSION}.zip" \
+            "ClaudeMultiUsage-${VERSION}.zip.sha256"

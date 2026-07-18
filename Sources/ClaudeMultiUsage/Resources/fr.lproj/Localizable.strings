@@ -1,0 +1,40 @@
+/* Menu */
+"menu.refresh.help" = "Actualiser maintenant";
+"menu.loading" = "Chargement...";
+"menu.noAccounts" = "Aucun compte connecté";
+"menu.addAccount" = "Ajouter un compte";
+"menu.lastUpdated" = "Mis à jour %@";
+"menu.quit" = "Quitter";
+"picker.minutes" = "%d min";
+
+/* Account row */
+"row.name.placeholder" = "Nom";
+"row.rename.help" = "Renommer";
+"row.remove.help" = "Supprimer le compte";
+"common.ok" = "OK";
+"reset.tooltip" = "Réinitialisation %@";
+"model.fallback" = "Modèle";
+
+/* Status */
+"status.unavailable" = "Indisponible";
+"status.expired" = "Expiré - reconnecter";
+"status.refreshFailed" = "Échec de l'actualisation - réessayer";
+"error.noLogin" = "Aucune connexion en cours";
+"error.noCode" = "Aucun code saisi";
+"error.invalidCode" = "Code invalide ou expiré - réessayez";
+
+/* Notifications */
+"notif.reset.title" = "Limite Claude réinitialisée";
+"notif.reset.body" = "%1$@ : la fenêtre %2$@ est de nouveau disponible.";
+"notif.threshold.title" = "Limite Claude presque atteinte";
+"notif.threshold.body" = "%1$@ : fenêtre %2$@ à %3$d %%";
+
+/* Add account */
+"add.title" = "Connecter un compte";
+"add.instructions" = "La connexion Claude s'est ouverte dans votre navigateur. Connectez-vous avec le compte souhaité, autorisez, puis copiez le code affiché. Cliquez ensuite ici sur « Connecter depuis le presse-papiers ».";
+"add.connectClipboard" = "Connecter depuis le presse-papiers";
+"add.manual" = "Coller le code manuellement";
+"add.codePlaceholder" = "code#state";
+"add.reopenBrowser" = "Rouvrir le navigateur";
+"add.cancel" = "Annuler";
+"add.connect" = "Connecter";

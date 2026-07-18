@@ -1,0 +1,40 @@
+/* Menu */
+"menu.refresh.help" = "Actualizar ahora";
+"menu.loading" = "Cargando...";
+"menu.noAccounts" = "Aún no hay cuentas conectadas";
+"menu.addAccount" = "Añadir cuenta";
+"menu.lastUpdated" = "Actualizado %@";
+"menu.quit" = "Salir";
+"picker.minutes" = "%d min";
+
+/* Account row */
+"row.name.placeholder" = "Nombre";
+"row.rename.help" = "Renombrar";
+"row.remove.help" = "Eliminar cuenta";
+"common.ok" = "OK";
+"reset.tooltip" = "Reinicio %@";
+"model.fallback" = "Modelo";
+
+/* Status */
+"status.unavailable" = "No disponible";
+"status.expired" = "Caducado - vuelve a conectar";
+"status.refreshFailed" = "Error al actualizar - reintentar";
+"error.noLogin" = "No hay ningún inicio de sesión en curso";
+"error.noCode" = "No se ha introducido ningún código";
+"error.invalidCode" = "Código no válido o caducado - inténtalo de nuevo";
+
+/* Notifications */
+"notif.reset.title" = "Límite de Claude restablecido";
+"notif.reset.body" = "%1$@: la ventana %2$@ vuelve a estar disponible.";
+"notif.threshold.title" = "Límite de Claude casi alcanzado";
+"notif.threshold.body" = "%1$@: ventana %2$@ al %3$d%%";
+
+/* Add account */
+"add.title" = "Conectar cuenta";
+"add.instructions" = "El inicio de sesión de Claude se ha abierto en el navegador. Inicia sesión con la cuenta que quieras, autoriza y copia el código mostrado. Luego haz clic aquí en «Conectar desde el portapapeles».";
+"add.connectClipboard" = "Conectar desde el portapapeles";
+"add.manual" = "Pegar el código manualmente";
+"add.codePlaceholder" = "code#state";
+"add.reopenBrowser" = "Reabrir el navegador";
+"add.cancel" = "Cancelar";
+"add.connect" = "Conectar";

@@ -1,0 +1,40 @@
+/* Menu */
+"menu.refresh.help" = "Aggiorna ora";
+"menu.loading" = "Caricamento...";
+"menu.noAccounts" = "Nessun account collegato";
+"menu.addAccount" = "Aggiungi account";
+"menu.lastUpdated" = "Aggiornato %@";
+"menu.quit" = "Esci";
+"picker.minutes" = "%d min";
+
+/* Account row */
+"row.name.placeholder" = "Nome";
+"row.rename.help" = "Rinomina";
+"row.remove.help" = "Rimuovi account";
+"common.ok" = "OK";
+"reset.tooltip" = "Reset %@";
+"model.fallback" = "Modello";
+
+/* Status */
+"status.unavailable" = "Non disponibile";
+"status.expired" = "Scaduto - ricollega";
+"status.refreshFailed" = "Aggiornamento non riuscito - riprova";
+"error.noLogin" = "Nessun accesso in corso";
+"error.noCode" = "Nessun codice inserito";
+"error.invalidCode" = "Codice non valido o scaduto - riprova";
+
+/* Notifications */
+"notif.reset.title" = "Limite Claude reimpostato";
+"notif.reset.body" = "%1$@: la finestra %2$@ è di nuovo disponibile.";
+"notif.threshold.title" = "Limite Claude quasi raggiunto";
+"notif.threshold.body" = "%1$@: finestra %2$@ al %3$d%%";
+
+/* Add account */
+"add.title" = "Collega account";
+"add.instructions" = "L'accesso a Claude si è aperto nel browser. Accedi con l'account desiderato, autorizza e copia il codice mostrato. Poi qui clicca su \"Collega dagli appunti\".";
+"add.connectClipboard" = "Collega dagli appunti";
+"add.manual" = "Incolla il codice manualmente";
+"add.codePlaceholder" = "code#state";
+"add.reopenBrowser" = "Riapri il browser";
+"add.cancel" = "Annulla";
+"add.connect" = "Collega";

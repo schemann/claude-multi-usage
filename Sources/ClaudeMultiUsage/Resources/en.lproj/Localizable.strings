@@ -1,0 +1,40 @@
+/* Menu */
+"menu.refresh.help" = "Refresh now";
+"menu.loading" = "Loading...";
+"menu.noAccounts" = "No accounts connected yet";
+"menu.addAccount" = "Add account";
+"menu.lastUpdated" = "Updated %@";
+"menu.quit" = "Quit";
+"picker.minutes" = "%d min";
+
+/* Account row */
+"row.name.placeholder" = "Name";
+"row.rename.help" = "Rename";
+"row.remove.help" = "Remove account";
+"common.ok" = "OK";
+"reset.tooltip" = "Reset %@";
+"model.fallback" = "Model";
+
+/* Status */
+"status.unavailable" = "Unavailable";
+"status.expired" = "Expired - reconnect";
+"status.refreshFailed" = "Refresh failed - retry";
+"error.noLogin" = "No active login in progress";
+"error.noCode" = "No code entered";
+"error.invalidCode" = "Code invalid or expired - try again";
+
+/* Notifications */
+"notif.reset.title" = "Claude limit reset";
+"notif.reset.body" = "%1$@: %2$@ window is available again.";
+"notif.threshold.title" = "Claude limit almost reached";
+"notif.threshold.body" = "%1$@: %2$@ window at %3$d%%";
+
+/* Add account */
+"add.title" = "Connect account";
+"add.instructions" = "The Claude sign-in has opened in your browser. Log in with the account you want, authorize, and copy the code shown. Then just click \"Connect from clipboard\" here.";
+"add.connectClipboard" = "Connect from clipboard";
+"add.manual" = "Paste code manually";
+"add.codePlaceholder" = "code#state";
+"add.reopenBrowser" = "Reopen browser";
+"add.cancel" = "Cancel";
+"add.connect" = "Connect";

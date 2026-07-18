@@ -1,0 +1,40 @@
+/* Menu */
+"menu.refresh.help" = "Jetzt aktualisieren";
+"menu.loading" = "Lade...";
+"menu.noAccounts" = "Noch keine Accounts verbunden";
+"menu.addAccount" = "Account hinzufügen";
+"menu.lastUpdated" = "Stand %@";
+"menu.quit" = "Beenden";
+"picker.minutes" = "%d min";
+
+/* Account row */
+"row.name.placeholder" = "Name";
+"row.rename.help" = "Umbenennen";
+"row.remove.help" = "Account entfernen";
+"common.ok" = "OK";
+"reset.tooltip" = "Reset %@";
+"model.fallback" = "Modell";
+
+/* Status */
+"status.unavailable" = "Nicht verfügbar";
+"status.expired" = "Abgelaufen - neu verbinden";
+"status.refreshFailed" = "Refresh fehlgeschlagen - Retry";
+"error.noLogin" = "Kein aktiver Login-Vorgang";
+"error.noCode" = "Kein Code eingegeben";
+"error.invalidCode" = "Code ungültig oder abgelaufen - nochmal versuchen";
+
+/* Notifications */
+"notif.reset.title" = "Claude-Limit zurückgesetzt";
+"notif.reset.body" = "%1$@: %2$@-Fenster ist wieder frei.";
+"notif.threshold.title" = "Claude-Limit fast erreicht";
+"notif.threshold.body" = "%1$@: %2$@-Fenster bei %3$d%%";
+
+/* Add account */
+"add.title" = "Account verbinden";
+"add.instructions" = "Im Browser hat sich die Claude-Anmeldung geöffnet. Logge dich mit dem gewünschten Account ein, autorisiere und kopiere den angezeigten Code. Dann hier einfach auf „Aus Zwischenablage verbinden“ klicken.";
+"add.connectClipboard" = "Aus Zwischenablage verbinden";
+"add.manual" = "Code manuell einfügen";
+"add.codePlaceholder" = "code#state";
+"add.reopenBrowser" = "Browser erneut öffnen";
+"add.cancel" = "Abbrechen";
+"add.connect" = "Verbinden";
