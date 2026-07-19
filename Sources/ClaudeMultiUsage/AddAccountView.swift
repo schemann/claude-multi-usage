@@ -59,6 +59,7 @@ struct AddAccountView: View {
         }
         .padding(20)
         .frame(width: 380)
+        .id(model.languageOverride)
         .onAppear { model.prefillFromClipboard() }
         .onChange(of: model.isAddingAccount) { adding in
             if !adding { AddAccountWindowController.shared.close() } // closes after a successful connect

@@ -209,6 +209,9 @@ struct MenuBarView: View {
         .padding(14)
         .frame(width: 360)
         .onAppear { model.refreshIfStale() }
+        // Rebuild the whole subtree on language change so every L() re-evaluates
+        // (child rows take value-type inputs and would not otherwise re-render).
+        .id(model.languageOverride)
     }
 
     /// Display name for a label metric key.
