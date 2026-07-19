@@ -1,31 +1,41 @@
 import SwiftUI
 
-/// Menu-bar label: highest utilization across all accounts as a percentage,
-/// tinted red/orange when high, or the gauge icon when nothing is connected.
+/// Menu-bar label: shows the utilization of the pinned accounts (or the single
+/// highest one when nothing is pinned), for the selected metric, tinted
+/// red/orange when high. Falls back to the gauge icon when nothing is connected.
 struct MenuBarLabel: View {
     @ObservedObject var model: AppModel
 
     var body: some View {
-        if let pct = model.maxUtilizationPercent {
-            HStack(spacing: 3) {
-                Image(systemName: icon(pct))
-                Text("\(pct)%")
-            }
-            .foregroundStyle(tint(pct))
-        } else {
+        let entries = model.menuBarLabelEntries
+        if entries.isEmpty {
             Image(systemName: "gauge.with.dots.needle.33percent")
+        } else {
+            let peak = entries.map(\.fraction).max() ?? 0
+            HStack(spacing: 5) {
+                Image(systemName: icon(peak))
+                ForEach(entries) { e in
+                    HStack(spacing: 2) {
+                        if entries.count > 1 {
+                            Text(e.initial).font(.system(size: 11, weight: .semibold))
+                        }
+                        Text("\(e.percent)%")
+                    }
+                    .foregroundStyle(tint(e.fraction))
+                }
+            }
         }
     }
 
-    private func icon(_ pct: Int) -> String {
-        if pct >= 90 { return "gauge.with.dots.needle.100percent" }
-        if pct >= 50 { return "gauge.with.dots.needle.67percent" }
+    private func icon(_ fraction: Double) -> String {
+        if fraction >= 0.9 { return "gauge.with.dots.needle.100percent" }
+        if fraction >= 0.5 { return "gauge.with.dots.needle.67percent" }
         return "gauge.with.dots.needle.33percent"
     }
 
-    private func tint(_ pct: Int) -> Color {
-        if pct >= 90 { return .red }
-        if pct >= 80 { return .orange }
+    private func tint(_ fraction: Double) -> Color {
+        if fraction >= 0.9 { return .red }
+        if fraction >= 0.8 { return .orange }
         return .primary
     }
 }
@@ -61,8 +71,10 @@ struct MenuBarView: View {
                     ForEach(Array(model.states.enumerated()), id: \.element.id) { index, state in
                         AccountRow(
                             state: state,
+                            isPinned: model.isPinned(state.id),
                             onRemove: { model.removeAccount(id: state.id) },
-                            onRename: { model.renameAccount(id: state.id, to: $0) }
+                            onRename: { model.renameAccount(id: state.id, to: $0) },
+                            onTogglePin: { model.togglePin(id: state.id) }
                         )
                         .padding(.vertical, 8)
                         if index < model.states.count - 1 { Divider() }
@@ -77,6 +89,24 @@ struct MenuBarView: View {
                 Label(L("menu.addAccount"), systemImage: "plus.circle")
             }
             .buttonStyle(.borderless)
+
+            if !model.states.isEmpty {
+                Divider()
+                HStack(spacing: 8) {
+                    Image(systemName: "menubar.arrow.up.rectangle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(L("menu.track")).font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Picker("", selection: $model.labelMetric) {
+                        ForEach(model.availableMetrics, id: \.self) { m in
+                            Text(metricName(m)).tag(m)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(maxWidth: 150)
+                }
+            }
 
             Divider()
 
@@ -102,12 +132,24 @@ struct MenuBarView: View {
         .frame(width: 360)
         .onAppear { model.refreshIfStale() }
     }
+
+    /// Display name for a label metric key.
+    private func metricName(_ metric: String) -> String {
+        switch metric {
+        case AppModel.metricPeak: return L("metric.peak")
+        case AppModel.metricFiveHour: return "5h"
+        case AppModel.metricSevenDay: return "7d"
+        default: return metric // model display name, e.g. "Fable"
+        }
+    }
 }
 
 struct AccountRow: View {
     let state: AccountState
+    let isPinned: Bool
     let onRemove: () -> Void
     let onRename: (String) -> Void
+    let onTogglePin: () -> Void
 
     @State private var hovering = false
     @State private var editing = false
@@ -176,6 +218,14 @@ struct AccountRow: View {
                     .buttonStyle(.borderless)
                     .help(L("row.remove.help"))
                 }
+                Button(action: onTogglePin) {
+                    Image(systemName: isPinned ? "pin.fill" : "pin")
+                        .font(.caption)
+                        .foregroundStyle(isPinned ? Color.accentColor : Color.secondary)
+                }
+                .buttonStyle(.borderless)
+                .help(isPinned ? L("row.pin.off") : L("row.pin.on"))
+                .opacity(isPinned || hovering ? 1 : 0.35)
             }
         }
     }

@@ -28,6 +28,10 @@ final class AppModel: ObservableObject {
     @Published private(set) var lastUpdated: Date?
     @Published private(set) var isRefreshing = false
 
+    /// Account ids the user pinned to the menu-bar label. Empty = show the peak
+    /// across all accounts (default).
+    @Published private(set) var pinnedIDs: Set<String> = []
+
     // Add-account (OAuth) flow state
     @Published var isAddingAccount = false
     @Published var pendingCode = ""
@@ -40,6 +44,16 @@ final class AppModel: ObservableObject {
             scheduleTimer()
         }
     }
+
+    /// Which window drives the menu-bar label: "peak" (max of all windows),
+    /// "5h", "7d", or a model display name (e.g. "Fable").
+    @Published var labelMetric: String {
+        didSet { UserDefaults.standard.set(labelMetric, forKey: "labelMetric") }
+    }
+
+    static let metricPeak = "peak"
+    static let metricFiveHour = "5h"
+    static let metricSevenDay = "7d"
 
     static let refreshOptions = [15, 30, 60]
 
@@ -56,15 +70,74 @@ final class AppModel: ObservableObject {
         let stored = UserDefaults.standard.integer(forKey: "refreshMinutes")
         refreshMinutes = Self.refreshOptions.contains(stored) ? stored : 30
         firedThresholds = Set(UserDefaults.standard.stringArray(forKey: "firedThresholds") ?? [])
+        labelMetric = UserDefaults.standard.string(forKey: "labelMetric") ?? Self.metricPeak
+        pinnedIDs = Set(UserDefaults.standard.stringArray(forKey: "pinnedAccountIDs") ?? [])
         accounts = store.load()
     }
 
-    /// Highest utilization across all signed-in accounts (both windows), for the
-    /// menu-bar label. nil when nothing is connected yet.
-    var maxUtilizationPercent: Int? {
-        let fractions = states.filter { $0.isSignedIn }.map { $0.peakFraction }
-        guard let peak = fractions.max() else { return nil }
-        return Int((peak * 100).rounded())
+    // MARK: - Menu-bar label
+
+    /// One value shown next to the menu-bar icon.
+    struct LabelEntry: Identifiable {
+        let id: String
+        let initial: String     // first letter of the account name, to tell pins apart
+        let percent: Int
+        let fraction: Double
+    }
+
+    /// Metrics selectable for the label: peak, 5h, 7d, plus every model that
+    /// currently reports a scoped limit (e.g. Fable).
+    var availableMetrics: [String] {
+        var models: [String] = []
+        for state in states {
+            for limit in state.usage?.modelLimits ?? [] {
+                if let name = limit.modelName, !models.contains(name) { models.append(name) }
+            }
+        }
+        return [Self.metricPeak, Self.metricFiveHour, Self.metricSevenDay] + models.sorted()
+    }
+
+    /// The fraction for `state` under the selected metric, or nil if that window
+    /// has no data for this account.
+    private func fraction(_ state: AccountState, metric: String) -> Double? {
+        guard let usage = state.usage else { return nil }
+        switch metric {
+        case Self.metricPeak: return state.peakFraction
+        case Self.metricFiveHour: return usage.fiveHour?.fraction
+        case Self.metricSevenDay: return usage.sevenDay?.fraction
+        default: return usage.modelLimits.first { $0.modelName == metric }?.fraction
+        }
+    }
+
+    private func entry(_ state: AccountState) -> LabelEntry? {
+        // Fall back to the account's peak if the chosen metric is missing for it.
+        let f = fraction(state, metric: labelMetric) ?? (state.usage != nil ? state.peakFraction : nil)
+        guard let f else { return nil }
+        let initial = state.name.first.map { String($0).uppercased() } ?? "?"
+        return LabelEntry(id: state.id, initial: initial, percent: Int((f * 100).rounded()), fraction: f)
+    }
+
+    /// Values to render next to the icon. Pinned accounts if any are pinned and
+    /// signed in; otherwise the single peak across all signed-in accounts.
+    var menuBarLabelEntries: [LabelEntry] {
+        let signed = states.filter { $0.isSignedIn }
+        guard !signed.isEmpty else { return [] }
+
+        let pinned = signed.filter { pinnedIDs.contains($0.id) }
+        if !pinned.isEmpty {
+            return pinned.compactMap { entry($0) }
+        }
+        // No pins: show the one account whose selected-metric value is highest.
+        let ranked = signed.compactMap { entry($0) }
+        guard let top = ranked.max(by: { $0.fraction < $1.fraction }) else { return [] }
+        return [top]
+    }
+
+    func isPinned(_ id: String) -> Bool { pinnedIDs.contains(id) }
+
+    func togglePin(id: String) {
+        if pinnedIDs.contains(id) { pinnedIDs.remove(id) } else { pinnedIDs.insert(id) }
+        UserDefaults.standard.set(Array(pinnedIDs), forKey: "pinnedAccountIDs")
     }
 
     func start() {
@@ -151,6 +224,9 @@ final class AppModel: ObservableObject {
         accounts.removeAll { $0.id == id }
         store.save(accounts)
         states.removeAll { $0.id == id }
+        if pinnedIDs.remove(id) != nil {
+            UserDefaults.standard.set(Array(pinnedIDs), forKey: "pinnedAccountIDs")
+        }
         refresh()
     }
 

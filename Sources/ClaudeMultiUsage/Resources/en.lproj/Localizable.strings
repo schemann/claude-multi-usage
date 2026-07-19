@@ -11,6 +11,10 @@
 "row.name.placeholder" = "Name";
 "row.rename.help" = "Rename";
 "row.remove.help" = "Remove account";
+"row.pin.on" = "Show next to the menu-bar icon";
+"row.pin.off" = "Stop showing next to the icon";
+"menu.track" = "Menu bar shows";
+"metric.peak" = "Peak";
 "common.ok" = "OK";
 "reset.tooltip" = "Reset %@";
 "model.fallback" = "Model";

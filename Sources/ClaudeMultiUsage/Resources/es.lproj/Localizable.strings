@@ -11,6 +11,10 @@
 "row.name.placeholder" = "Nombre";
 "row.rename.help" = "Renombrar";
 "row.remove.help" = "Eliminar cuenta";
+"row.pin.on" = "Mostrar junto al icono";
+"row.pin.off" = "Dejar de mostrar junto al icono";
+"menu.track" = "La barra muestra";
+"metric.peak" = "Máx";
 "common.ok" = "OK";
 "reset.tooltip" = "Reinicio %@";
 "model.fallback" = "Modelo";

@@ -11,6 +11,10 @@
 "row.name.placeholder" = "Name";
 "row.rename.help" = "Umbenennen";
 "row.remove.help" = "Account entfernen";
+"row.pin.on" = "Neben dem Menüleisten-Icon anzeigen";
+"row.pin.off" = "Nicht mehr neben dem Icon anzeigen";
+"menu.track" = "Menüleiste zeigt";
+"metric.peak" = "Peak";
 "common.ok" = "OK";
 "reset.tooltip" = "Reset %@";
 "model.fallback" = "Modell";
