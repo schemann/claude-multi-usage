@@ -15,6 +15,10 @@
 "row.pin.off" = "Dejar de mostrar junto al icono";
 "menu.track" = "La barra muestra";
 "metric.peak" = "Máx";
+"menu.mode" = "Modo";
+"mode.static" = "Estático";
+"mode.round" = "Rotación";
+"picker.seconds" = "%d s";
 "common.ok" = "OK";
 "reset.tooltip" = "Reinicio %@";
 "model.fallback" = "Modelo";

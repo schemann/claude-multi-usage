@@ -15,6 +15,10 @@
 "row.pin.off" = "Stop showing next to the icon";
 "menu.track" = "Menu bar shows";
 "metric.peak" = "Peak";
+"menu.mode" = "Mode";
+"mode.static" = "Static";
+"mode.round" = "Round robin";
+"picker.seconds" = "%d s";
 "common.ok" = "OK";
 "reset.tooltip" = "Reset %@";
 "model.fallback" = "Model";

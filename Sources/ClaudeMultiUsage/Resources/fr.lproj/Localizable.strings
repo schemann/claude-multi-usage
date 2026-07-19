@@ -15,6 +15,10 @@
 "row.pin.off" = "Ne plus afficher à côté de l'icône";
 "menu.track" = "La barre affiche";
 "metric.peak" = "Max";
+"menu.mode" = "Mode";
+"mode.static" = "Statique";
+"mode.round" = "Rotation";
+"picker.seconds" = "%d s";
 "common.ok" = "OK";
 "reset.tooltip" = "Réinitialisation %@";
 "model.fallback" = "Modèle";

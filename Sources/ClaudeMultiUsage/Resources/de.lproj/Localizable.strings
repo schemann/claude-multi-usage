@@ -15,6 +15,10 @@
 "row.pin.off" = "Nicht mehr neben dem Icon anzeigen";
 "menu.track" = "Menüleiste zeigt";
 "metric.peak" = "Peak";
+"menu.mode" = "Modus";
+"mode.static" = "Statisch";
+"mode.round" = "Reihum";
+"picker.seconds" = "%d s";
 "common.ok" = "OK";
 "reset.tooltip" = "Reset %@";
 "model.fallback" = "Modell";

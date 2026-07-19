@@ -51,9 +51,33 @@ final class AppModel: ObservableObject {
         didSet { UserDefaults.standard.set(labelMetric, forKey: "labelMetric") }
     }
 
+    /// Label display mode: "static" (show pinned / peak at once) or "round"
+    /// (cycle through the accounts one at a time).
+    @Published var labelMode: String {
+        didSet {
+            UserDefaults.standard.set(labelMode, forKey: "labelMode")
+            scheduleRotationTimer()
+        }
+    }
+
+    /// Seconds between switches in round-robin mode.
+    @Published var rotateSeconds: Int {
+        didSet {
+            UserDefaults.standard.set(rotateSeconds, forKey: "rotateSeconds")
+            scheduleRotationTimer()
+        }
+    }
+
+    /// Index of the account currently shown in round-robin mode.
+    @Published private(set) var rotationIndex = 0
+
     static let metricPeak = "peak"
     static let metricFiveHour = "5h"
     static let metricSevenDay = "7d"
+
+    static let labelModeStatic = "static"
+    static let labelModeRound = "round"
+    static let rotateOptions = [3, 5, 10, 15, 30]
 
     static let refreshOptions = [15, 30, 60]
 
@@ -64,6 +88,7 @@ final class AppModel: ObservableObject {
     private var accounts: [StoredAccount] = []
     private var pkce: OAuthService.PKCE?
     private var timer: Timer?
+    private var rotationTimer: Timer?
     private var firedThresholds: Set<String>
 
     private init() {
@@ -71,6 +96,9 @@ final class AppModel: ObservableObject {
         refreshMinutes = Self.refreshOptions.contains(stored) ? stored : 30
         firedThresholds = Set(UserDefaults.standard.stringArray(forKey: "firedThresholds") ?? [])
         labelMetric = UserDefaults.standard.string(forKey: "labelMetric") ?? Self.metricPeak
+        labelMode = UserDefaults.standard.string(forKey: "labelMode") ?? Self.labelModeStatic
+        let storedRotate = UserDefaults.standard.integer(forKey: "rotateSeconds")
+        rotateSeconds = Self.rotateOptions.contains(storedRotate) ? storedRotate : 5
         pinnedIDs = Set(UserDefaults.standard.stringArray(forKey: "pinnedAccountIDs") ?? [])
         accounts = store.load()
     }
@@ -117,20 +145,39 @@ final class AppModel: ObservableObject {
         return LabelEntry(id: state.id, initial: initial, percent: Int((f * 100).rounded()), fraction: f)
     }
 
-    /// Values to render next to the icon. Pinned accounts if any are pinned and
-    /// signed in; otherwise the single peak across all signed-in accounts.
-    var menuBarLabelEntries: [LabelEntry] {
+    /// The accounts the label cycles/shows: pinned ones if any are pinned and
+    /// signed in, otherwise all signed-in accounts.
+    private var labelCycle: [AccountState] {
         let signed = states.filter { $0.isSignedIn }
-        guard !signed.isEmpty else { return [] }
-
         let pinned = signed.filter { pinnedIDs.contains($0.id) }
+        return pinned.isEmpty ? signed : pinned
+    }
+
+    /// Values to render next to the icon. In round-robin mode one account at a
+    /// time (the current rotation step); otherwise the pinned accounts, or the
+    /// single highest account when nothing is pinned.
+    var menuBarLabelEntries: [LabelEntry] {
+        let cycle = labelCycle
+        guard !cycle.isEmpty else { return [] }
+
+        if labelMode == Self.labelModeRound {
+            let idx = ((rotationIndex % cycle.count) + cycle.count) % cycle.count
+            return [entry(cycle[idx])].compactMap { $0 }
+        }
+
+        let pinned = cycle.filter { pinnedIDs.contains($0.id) }
         if !pinned.isEmpty {
             return pinned.compactMap { entry($0) }
         }
         // No pins: show the one account whose selected-metric value is highest.
-        let ranked = signed.compactMap { entry($0) }
+        let ranked = cycle.compactMap { entry($0) }
         guard let top = ranked.max(by: { $0.fraction < $1.fraction }) else { return [] }
         return [top]
+    }
+
+    /// Whether the label should prefix each value with the account initial.
+    var labelShowsInitials: Bool {
+        labelMode == Self.labelModeRound || menuBarLabelEntries.count > 1
     }
 
     func isPinned(_ id: String) -> Bool { pinnedIDs.contains(id) }
@@ -144,6 +191,7 @@ final class AppModel: ObservableObject {
         Task { await ResetNotifier.requestAuthorization() }
         refresh()
         scheduleTimer()
+        scheduleRotationTimer()
     }
 
     func refresh() { Task { await reload() } }
@@ -255,6 +303,22 @@ final class AppModel: ObservableObject {
         }
         RunLoop.main.add(t, forMode: .common)
         timer = t
+    }
+
+    /// Timer that advances the round-robin label. Off unless in round mode.
+    private func scheduleRotationTimer() {
+        rotationTimer?.invalidate()
+        rotationTimer = nil
+        guard labelMode == Self.labelModeRound else {
+            rotationIndex = 0
+            return
+        }
+        let t = Timer(timeInterval: Double(rotateSeconds), repeats: true) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in self.rotationIndex &+= 1 }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        rotationTimer = t
     }
 
     private func reload() async {

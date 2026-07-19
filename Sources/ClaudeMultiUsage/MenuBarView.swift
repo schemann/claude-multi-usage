@@ -12,11 +12,12 @@ struct MenuBarLabel: View {
             Image(systemName: "gauge.with.dots.needle.33percent")
         } else {
             let peak = entries.map(\.fraction).max() ?? 0
+            let showInitials = model.labelShowsInitials
             HStack(spacing: 5) {
                 Image(systemName: icon(peak))
                 ForEach(entries) { e in
                     HStack(spacing: 2) {
-                        if entries.count > 1 {
+                        if showInitials {
                             Text(e.initial).font(.system(size: 11, weight: .semibold))
                         }
                         Text("\(e.percent)%")
@@ -92,19 +93,40 @@ struct MenuBarView: View {
 
             if !model.states.isEmpty {
                 Divider()
-                HStack(spacing: 8) {
-                    Image(systemName: "menubar.arrow.up.rectangle")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(L("menu.track")).font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                    Picker("", selection: $model.labelMetric) {
-                        ForEach(model.availableMetrics, id: \.self) { m in
-                            Text(metricName(m)).tag(m)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "menubar.arrow.up.rectangle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(L("menu.track")).font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Picker("", selection: $model.labelMetric) {
+                            ForEach(model.availableMetrics, id: \.self) { m in
+                                Text(metricName(m)).tag(m)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(maxWidth: 150)
+                    }
+
+                    HStack(spacing: 8) {
+                        Text(L("menu.mode")).font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Picker("", selection: $model.labelMode) {
+                            Text(L("mode.static")).tag(AppModel.labelModeStatic)
+                            Text(L("mode.round")).tag(AppModel.labelModeRound)
+                        }
+                        .labelsHidden()
+                        .frame(maxWidth: 130)
+
+                        if model.labelMode == AppModel.labelModeRound {
+                            Picker("", selection: $model.rotateSeconds) {
+                                ForEach(AppModel.rotateOptions, id: \.self) { Text(L("picker.seconds", $0)).tag($0) }
+                            }
+                            .labelsHidden()
+                            .frame(width: 66)
                         }
                     }
-                    .labelsHidden()
-                    .frame(maxWidth: 150)
                 }
             }
 
