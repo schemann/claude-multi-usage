@@ -105,12 +105,10 @@ final class AppModel: ObservableObject {
 
     // MARK: - Menu-bar label
 
-    /// One value shown next to the menu-bar icon.
-    struct LabelEntry: Identifiable {
+    /// One account's usage bars shown in the menu-bar label.
+    struct LabelGroup: Identifiable {
         let id: String
-        let initial: String     // first letter of the account name, to tell pins apart
-        let percent: Int
-        let fraction: Double
+        let bars: [Double]   // fill fractions, top to bottom (e.g. 5h over 7d)
     }
 
     /// Metrics selectable for the label: peak, 5h, 7d, plus every model that
@@ -137,12 +135,20 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func entry(_ state: AccountState) -> LabelEntry? {
-        // Fall back to the account's peak if the chosen metric is missing for it.
-        let f = fraction(state, metric: labelMetric) ?? (state.usage != nil ? state.peakFraction : nil)
-        guard let f else { return nil }
-        let initial = state.name.first.map { String($0).uppercased() } ?? "?"
-        return LabelEntry(id: state.id, initial: initial, percent: Int((f * 100).rounded()), fraction: f)
+    /// Bar fill fractions for one account: two bars (5h, 7d) for the peak metric,
+    /// or a single bar for a specific window.
+    private func bars(for state: AccountState) -> [Double] {
+        guard let usage = state.usage else { return [] }
+        switch labelMetric {
+        case Self.metricPeak:
+            return [usage.fiveHour?.fraction, usage.sevenDay?.fraction].compactMap { $0 }
+        case Self.metricFiveHour:
+            return [usage.fiveHour?.fraction].compactMap { $0 }
+        case Self.metricSevenDay:
+            return [usage.sevenDay?.fraction].compactMap { $0 }
+        default:
+            return [usage.modelLimits.first { $0.modelName == labelMetric }?.fraction].compactMap { $0 }
+        }
     }
 
     /// The accounts the label cycles/shows: pinned ones if any are pinned and
@@ -153,31 +159,29 @@ final class AppModel: ObservableObject {
         return pinned.isEmpty ? signed : pinned
     }
 
-    /// Values to render next to the icon. In round-robin mode one account at a
-    /// time (the current rotation step); otherwise the pinned accounts, or the
-    /// single highest account when nothing is pinned.
-    var menuBarLabelEntries: [LabelEntry] {
+    /// Accounts currently represented in the label. Round-robin: one at a time;
+    /// otherwise the pinned accounts, or the single highest when nothing pinned.
+    private var shownAccounts: [AccountState] {
         let cycle = labelCycle
         guard !cycle.isEmpty else { return [] }
 
         if labelMode == Self.labelModeRound {
             let idx = ((rotationIndex % cycle.count) + cycle.count) % cycle.count
-            return [entry(cycle[idx])].compactMap { $0 }
+            return [cycle[idx]]
         }
-
         let pinned = cycle.filter { pinnedIDs.contains($0.id) }
-        if !pinned.isEmpty {
-            return pinned.compactMap { entry($0) }
+        if !pinned.isEmpty { return pinned }
+        let top = cycle.max {
+            (fraction($0, metric: labelMetric) ?? $0.peakFraction) <
+            (fraction($1, metric: labelMetric) ?? $1.peakFraction)
         }
-        // No pins: show the one account whose selected-metric value is highest.
-        let ranked = cycle.compactMap { entry($0) }
-        guard let top = ranked.max(by: { $0.fraction < $1.fraction }) else { return [] }
-        return [top]
+        return top.map { [$0] } ?? []
     }
 
-    /// Whether the label should prefix each value with the account initial.
-    var labelShowsInitials: Bool {
-        labelMode == Self.labelModeRound || menuBarLabelEntries.count > 1
+    /// One bar group per shown account, for the menu-bar label.
+    var menuBarLabelGroups: [LabelGroup] {
+        shownAccounts.map { LabelGroup(id: $0.id, bars: bars(for: $0)) }
+            .filter { !$0.bars.isEmpty }
     }
 
     func isPinned(_ id: String) -> Bool { pinnedIDs.contains(id) }

@@ -1,31 +1,46 @@
 import SwiftUI
 
-/// Menu-bar label: shows the utilization of the pinned accounts (or the single
-/// highest one when nothing is pinned), for the selected metric, tinted
-/// red/orange when high. Falls back to the gauge icon when nothing is connected.
+/// Menu-bar label: draws small stacked usage bars for the pinned accounts (or
+/// the single highest one when nothing is pinned) - one bar per window for the
+/// selected metric, tinted red/orange when high. Falls back to the gauge icon
+/// when nothing is connected.
 struct MenuBarLabel: View {
     @ObservedObject var model: AppModel
 
     var body: some View {
-        let entries = model.menuBarLabelEntries
-        if entries.isEmpty {
+        let groups = model.menuBarLabelGroups
+        if groups.isEmpty {
             Image(systemName: "gauge.with.dots.needle.33percent")
         } else {
-            let peak = entries.map(\.fraction).max() ?? 0
-            HStack(spacing: 4) {
-                Image(systemName: icon(peak))
-                ForEach(entries) { e in
-                    Text("\(e.percent)%")
-                        .foregroundStyle(tint(e.fraction))
+            HStack(spacing: 5) {
+                ForEach(groups) { group in
+                    MiniBars(fractions: group.bars)
                 }
             }
         }
     }
+}
 
-    private func icon(_ fraction: Double) -> String {
-        if fraction >= 0.9 { return "gauge.with.dots.needle.100percent" }
-        if fraction >= 0.5 { return "gauge.with.dots.needle.67percent" }
-        return "gauge.with.dots.needle.33percent"
+/// A vertical stack of thin fill bars, sized for the menu bar.
+struct MiniBars: View {
+    let fractions: [Double]
+
+    private let barWidth: CGFloat = 22
+    private let barHeight: CGFloat = 3.5
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2.5) {
+            ForEach(Array(fractions.enumerated()), id: \.offset) { _, f in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.primary.opacity(0.22))
+                        .frame(width: barWidth, height: barHeight)
+                    Capsule()
+                        .fill(tint(f))
+                        .frame(width: max(barHeight, barWidth * CGFloat(max(0, min(1, f)))), height: barHeight)
+                }
+            }
+        }
     }
 
     private func tint(_ fraction: Double) -> Color {
