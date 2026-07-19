@@ -10,22 +10,15 @@ struct MenuBarLabel: View {
         let entries = model.menuBarLabelEntries
         if entries.isEmpty {
             Image(systemName: "gauge.with.dots.needle.33percent")
-        } else if model.labelShowsInitials {
-            // Pinned / round-robin: identify each account by its initial. No
-            // gauge icon here, so the percentage always fits in the menu bar.
-            HStack(spacing: 6) {
+        } else {
+            let peak = entries.map(\.fraction).max() ?? 0
+            HStack(spacing: 4) {
+                Image(systemName: icon(peak))
                 ForEach(entries) { e in
-                    Text("\(e.initial) \(e.percent)%")
+                    Text("\(e.percent)%")
                         .foregroundStyle(tint(e.fraction))
                 }
             }
-        } else {
-            let e = entries[0]
-            HStack(spacing: 3) {
-                Image(systemName: icon(e.fraction))
-                Text("\(e.percent)%")
-            }
-            .foregroundStyle(tint(e.fraction))
         }
     }
 
