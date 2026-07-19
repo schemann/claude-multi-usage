@@ -109,6 +109,7 @@ final class AppModel: ObservableObject {
     struct LabelGroup: Identifiable {
         let id: String
         let bars: [Double]   // fill fractions, top to bottom (e.g. 5h over 7d)
+        let percent: Int     // the fullest shown window, for the text label
     }
 
     /// Metrics selectable for the label: peak, 5h, 7d, plus every model that
@@ -180,8 +181,11 @@ final class AppModel: ObservableObject {
 
     /// One bar group per shown account, for the menu-bar label.
     var menuBarLabelGroups: [LabelGroup] {
-        shownAccounts.map { LabelGroup(id: $0.id, bars: bars(for: $0)) }
-            .filter { !$0.bars.isEmpty }
+        shownAccounts.compactMap { state in
+            let bars = bars(for: state)
+            guard let peak = bars.max() else { return nil }
+            return LabelGroup(id: state.id, bars: bars, percent: Int((peak * 100).rounded()))
+        }
     }
 
     func isPinned(_ id: String) -> Bool { pinnedIDs.contains(id) }

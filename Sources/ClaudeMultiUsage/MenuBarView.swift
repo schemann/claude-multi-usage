@@ -1,52 +1,83 @@
 import SwiftUI
+import AppKit
 
 /// Menu-bar label: draws small stacked usage bars for the pinned accounts (or
 /// the single highest one when nothing is pinned) - one bar per window for the
-/// selected metric, tinted red/orange when high. Falls back to the gauge icon
+/// selected metric, tinted orange/red when high. Falls back to the gauge icon
 /// when nothing is connected.
+///
+/// SwiftUI shape views render as an empty label in the menu bar, so the bars are
+/// rasterized into an NSImage (non-template, to keep their color).
 struct MenuBarLabel: View {
     @ObservedObject var model: AppModel
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         let groups = model.menuBarLabelGroups
         if groups.isEmpty {
             Image(systemName: "gauge.with.dots.needle.33percent")
         } else {
-            HStack(spacing: 5) {
+            HStack(spacing: 8) {
                 ForEach(groups) { group in
-                    MiniBars(fractions: group.bars)
+                    if let image = MiniBars.render(group: group, dark: colorScheme == .dark) {
+                        Image(nsImage: image)
+                    }
                 }
             }
         }
     }
 }
 
-/// A vertical stack of thin fill bars, sized for the menu bar.
-struct MiniBars: View {
-    let fractions: [Double]
+/// Renders one account's label - the percent on top, its usage bars below - into
+/// a single NSImage. The menu bar reorders side-by-side views and drops bare
+/// SwiftUI shapes, so baking the whole stack into one non-template image is the
+/// only reliable way to keep the vertical layout and the bar colors. The percent
+/// text color follows the menu-bar appearance (passed in as `dark`).
+enum MiniBars {
+    static let barWidth: CGFloat = 28
+    static let barHeight: CGFloat = 4
+    static let barSpacing: CGFloat = 2
+    static let labelWidth: CGFloat = 32   // fixed so the menu bar never shifts
 
-    private let barWidth: CGFloat = 22
-    private let barHeight: CGFloat = 3.5
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2.5) {
-            ForEach(Array(fractions.enumerated()), id: \.offset) { _, f in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.primary.opacity(0.22))
-                        .frame(width: barWidth, height: barHeight)
-                    Capsule()
-                        .fill(tint(f))
-                        .frame(width: max(barHeight, barWidth * CGFloat(max(0, min(1, f)))), height: barHeight)
+    @MainActor
+    static func render(group: AppModel.LabelGroup, dark: Bool) -> NSImage? {
+        guard !group.bars.isEmpty else { return nil }
+        let content = VStack(alignment: .center, spacing: 1) {
+            Text("\(group.percent)%")
+                .font(.system(size: 9, weight: .semibold).monospacedDigit())
+                .foregroundColor(dark ? .white : .black)
+                .lineLimit(1)
+                .fixedSize()
+            VStack(alignment: .center, spacing: barSpacing) {
+                ForEach(Array(group.bars.enumerated()), id: \.offset) { _, f in
+                    bar(f)
                 }
             }
         }
+        .frame(width: labelWidth)
+
+        let renderer = ImageRenderer(content: content)
+        renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
+        guard let image = renderer.nsImage else { return nil }
+        image.isTemplate = false
+        return image
     }
 
-    private func tint(_ fraction: Double) -> Color {
-        if fraction >= 0.9 { return .red }
-        if fraction >= 0.8 { return .orange }
-        return .primary
+    @ViewBuilder
+    private static func bar(_ f: Double) -> some View {
+        let clamped = max(0, min(1, f))
+        ZStack(alignment: .leading) {
+            Capsule().fill(Color(white: 0.55).opacity(0.45))
+                .frame(width: barWidth, height: barHeight)
+            Capsule().fill(tint(f))
+                .frame(width: max(barHeight, barWidth * CGFloat(clamped)), height: barHeight)
+        }
+    }
+
+    private static func tint(_ fraction: Double) -> Color {
+        if fraction >= 0.9 { return Color(red: 1.0, green: 0.27, blue: 0.23) }   // red
+        if fraction >= 0.8 { return Color(red: 1.0, green: 0.62, blue: 0.04) }   // orange
+        return Color(red: 0.30, green: 0.55, blue: 1.0)                          // blue
     }
 }
 
