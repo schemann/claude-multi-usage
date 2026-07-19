@@ -19,6 +19,8 @@
 "mode.static" = "Static";
 "mode.round" = "Round robin";
 "picker.seconds" = "%d s";
+"menu.language" = "Language";
+"language.system" = "System";
 "common.ok" = "OK";
 "reset.tooltip" = "Reset %@";
 "model.fallback" = "Model";

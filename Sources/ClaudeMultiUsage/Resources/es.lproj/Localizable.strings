@@ -19,6 +19,8 @@
 "mode.static" = "Estático";
 "mode.round" = "Rotación";
 "picker.seconds" = "%d s";
+"menu.language" = "Idioma";
+"language.system" = "Sistema";
 "common.ok" = "OK";
 "reset.tooltip" = "Reinicio %@";
 "model.fallback" = "Modelo";

@@ -19,6 +19,8 @@
 "mode.static" = "Statisch";
 "mode.round" = "Reihum";
 "picker.seconds" = "%d s";
+"menu.language" = "Sprache";
+"language.system" = "System";
 "common.ok" = "OK";
 "reset.tooltip" = "Reset %@";
 "model.fallback" = "Modell";

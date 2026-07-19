@@ -173,6 +173,22 @@ struct MenuBarView: View {
             Divider()
 
             HStack(spacing: 8) {
+                Image(systemName: "globe").font(.caption).foregroundStyle(.secondary)
+                Text(L("menu.language")).font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Picker("", selection: $model.languageOverride) {
+                    Text(L("language.system")).tag(AppModel.languageSystem)
+                    Text("English").tag("en")
+                    Text("Deutsch").tag("de")
+                    Text("Français").tag("fr")
+                    Text("Italiano").tag("it")
+                    Text("Español").tag("es")
+                }
+                .labelsHidden()
+                .frame(maxWidth: 150)
+            }
+
+            HStack(spacing: 8) {
                 Picker("", selection: $model.refreshMinutes) {
                     ForEach(AppModel.refreshOptions, id: \.self) { Text(L("picker.minutes", $0)).tag($0) }
                 }
@@ -326,6 +342,7 @@ struct BarRow: View {
 
     private var resetText: String {
         guard let reset else { return "" }
+        Self.relative.locale = LocalizationOverride.locale
         return "↻ " + Self.relative.localizedString(for: reset, relativeTo: Date())
     }
 

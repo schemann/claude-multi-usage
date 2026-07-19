@@ -68,6 +68,17 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// In-app UI language: "system" or a language code (en/de/fr/it/es).
+    @Published var languageOverride: String {
+        didSet {
+            UserDefaults.standard.set(languageOverride, forKey: "languageOverride")
+            LocalizationOverride.languageCode = (languageOverride == Self.languageSystem) ? nil : languageOverride
+        }
+    }
+
+    static let languageSystem = "system"
+    static let languageOptions = ["system", "en", "de", "fr", "it", "es"]
+
     /// Index of the account currently shown in round-robin mode.
     @Published private(set) var rotationIndex = 0
 
@@ -99,6 +110,9 @@ final class AppModel: ObservableObject {
         labelMode = UserDefaults.standard.string(forKey: "labelMode") ?? Self.labelModeStatic
         let storedRotate = UserDefaults.standard.integer(forKey: "rotateSeconds")
         rotateSeconds = Self.rotateOptions.contains(storedRotate) ? storedRotate : 5
+        let storedLang = UserDefaults.standard.string(forKey: "languageOverride") ?? Self.languageSystem
+        languageOverride = storedLang
+        LocalizationOverride.languageCode = (storedLang == Self.languageSystem) ? nil : storedLang
         pinnedIDs = Set(UserDefaults.standard.stringArray(forKey: "pinnedAccountIDs") ?? [])
         accounts = store.load()
     }
